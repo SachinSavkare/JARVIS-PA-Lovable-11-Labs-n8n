@@ -1,0 +1,418 @@
+{
+  "name": "28.2 Email Agent Subworkflow",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -320,
+        -32
+      ],
+      "id": "7bd58cf3-626d-4b84-9312-76c6bb477045",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.query }}",
+        "options": {
+          "systemMessage": "=# Overview\nYou are an email management assistant. All emails must be formatted professionally in HTML and signed off as \"Nate.\" \n\n**Email Management Tools**   \n   - Use \"Send Email\" to send emails.  \n   - Use \"Create Draft\" if the user asks for a draft.  \n   - Use \"Get Emails\" to retrieve emails when requested.\n   - Use \"Get Labels\" to retrieve labels.\n   - Use \"Mark Unread\" to mark an email as unread. You must use \"Get Emails\" first so you have the message ID of the email to flag.\n   - Use \"Label Email\" to flag an email. You must use \"Get Emails\" first so you have the message ID of the email to flag. Then you must use \"Get Labels\" so you have the label ID.\n   - Use \"Email Reply\" to reply to an email. You must use \"Get Emails\" first so you have the message ID of the email to reply to.\n\n## Final Notes\n- Here is the current date/time: {{ $now }}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        80,
+        -32
+      ],
+      "id": "73b5aaef-6b13-4aad-9e77-a1bf43ea15f3",
+      "name": "Email Agent",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -272,
+        144
+      ],
+      "id": "19dc46a1-d6b5-4905-8ec5-4e83d0fcca73",
+      "name": "gpt-4.1-mini",
+      "credentials": {
+        "openAiApi": {
+          "id": "2ll7nWhcZokpqeYF",
+          "name": "OpenAi account AIS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $fromAI(\"emailAddress\") }}",
+        "subject": "={{ $fromAI(\"subject\") }}",
+        "message": "={{ $fromAI(\"emailBody\") }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        -160,
+        224
+      ],
+      "id": "89e6b703-7939-487a-9754-938bf5617cd7",
+      "name": "Send Email",
+      "webhookId": "6f1fed16-f81d-4804-a5d3-10b52e87e33b",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "eCK4EFn7FCxilJEq",
+          "name": "Gmail AIS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "reply",
+        "messageId": "={{ $fromAI(\"ID\",\"the message ID\") }}",
+        "message": "={{ $fromAI(\"emailBody\") }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        -32,
+        256
+      ],
+      "id": "fe60d0b5-391d-45a1-a395-10c67fb133ed",
+      "name": "Reply Email",
+      "webhookId": "6f1fed16-f81d-4804-a5d3-10b52e87e33b",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "eCK4EFn7FCxilJEq",
+          "name": "Gmail AIS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "={{ $fromAI(\"subject\") }}",
+        "message": "={{ $fromAI(\"emailBody\") }}",
+        "options": {
+          "sendTo": "={{ $fromAI(\"emailAddress\") }}"
+        }
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        224,
+        320
+      ],
+      "id": "2628ca99-8bd9-44f8-b816-e9093e445f9f",
+      "name": "Create Draft",
+      "webhookId": "6f1fed16-f81d-4804-a5d3-10b52e87e33b",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "eCK4EFn7FCxilJEq",
+          "name": "Gmail AIS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "limit": "={{ $fromAI(\"limit\",\"how many emails the user wants\") }}",
+        "simple": false,
+        "filters": {
+          "sender": "={{ $fromAI(\"sender\",\"who the emails are from\") }}"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        352,
+        304
+      ],
+      "id": "781d697d-8916-46ab-90d2-a44b4d8d00e9",
+      "name": "Get Emails",
+      "webhookId": "6f1fed16-f81d-4804-a5d3-10b52e87e33b",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "eCK4EFn7FCxilJEq",
+          "name": "Gmail AIS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "label",
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        480,
+        288
+      ],
+      "id": "a1b03071-0053-4065-bf4e-13b01501522e",
+      "name": "Get Labels",
+      "webhookId": "6f1fed16-f81d-4804-a5d3-10b52e87e33b",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "eCK4EFn7FCxilJEq",
+          "name": "Gmail AIS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "markAsUnread",
+        "messageId": "={{ $fromAI(\"messageID\") }}"
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        608,
+        224
+      ],
+      "id": "b5b2b5b0-b5ab-4030-a147-a39542a4f531",
+      "name": "Mark Unread",
+      "webhookId": "6f1fed16-f81d-4804-a5d3-10b52e87e33b",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "eCK4EFn7FCxilJEq",
+          "name": "Gmail AIS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "138207c4-cdc1-4899-920a-dd781f7e5c1c",
+              "name": "response",
+              "value": "={{$json.output}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        480,
+        -160
+      ],
+      "id": "2b7e128f-fc7f-4c16-8dde-fa83cee42daa",
+      "name": "Responsd to Jarvis (Success)"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "59b0c521-a0ad-4177-82fa-fa3c13787e0e",
+              "name": "response",
+              "value": "Unable to perform task. Please try again",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        688,
+        -16
+      ],
+      "id": "acef049d-afbc-4b22-b98a-d7ae6cc9a10b",
+      "name": "Responsd to Jarvis (Try Again)"
+    },
+    {
+      "parameters": {
+        "content": "# Child Agent",
+        "height": 272,
+        "width": 384,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        16,
+        -128
+      ],
+      "id": "bfcb87d4-fa16-41f9-aa26-2e2d480a0f20",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{ $fromAI(\"ID\",\"the ID of the message\") }}",
+        "labelIds": "={{ $fromAI(\"labelID\") }}"
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        96,
+        288
+      ],
+      "id": "cc6cd6de-6546-4f21-a866-31143bb990f5",
+      "name": "Label Inbox Email",
+      "webhookId": "6f1fed16-f81d-4804-a5d3-10b52e87e33b",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "eCK4EFn7FCxilJEq",
+          "name": "Gmail AIS"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Email Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "gpt-4.1-mini": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Email Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email": {
+      "ai_tool": [
+        [
+          {
+            "node": "Email Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reply Email": {
+      "ai_tool": [
+        [
+          {
+            "node": "Email Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Draft": {
+      "ai_tool": [
+        [
+          {
+            "node": "Email Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Emails": {
+      "ai_tool": [
+        [
+          {
+            "node": "Email Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Labels": {
+      "ai_tool": [
+        [
+          {
+            "node": "Email Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Unread": {
+      "ai_tool": [
+        [
+          {
+            "node": "Email Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Agent": {
+      "main": [
+        [
+          {
+            "node": "Responsd to Jarvis (Success)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Responsd to Jarvis (Try Again)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Label Inbox Email": {
+      "ai_tool": [
+        [
+          {
+            "node": "Email Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f7fcf7a9-7f08-48af-9416-76969b22fac0",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "91f42292365f2736b62ea45ddfd531a5d9a185f2bc4a363bfb1ae1188ac76851"
+  },
+  "id": "XdHCrWoh6PuIutnJ",
+  "tags": []
+}

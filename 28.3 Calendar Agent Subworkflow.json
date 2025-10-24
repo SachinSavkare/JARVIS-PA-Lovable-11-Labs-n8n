@@ -1,0 +1,361 @@
+{
+  "name": "28.3 Calendar Agent Subworkflow",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -432,
+        -64
+      ],
+      "id": "c3b0f029-ec28-4c6c-ab03-954c02e44033",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.query }}",
+        "options": {
+          "systemMessage": "=### 🧠 **Updated System Message**\n\n# Overview\n\nYou are a calendar assistant. Your responsibilities include creating, getting, updating, and deleting events in the user’s calendar.\nAll calendar operations must strictly follow **Indian Standard Time (IST, UTC+05:30)** — this includes event creation, updates, retrievals, and deletions. Always interpret and display times in IST unless explicitly specified otherwise.\n\n**Calendar Management Tools**\n\n* Use **\"Create Event with Attendee\"** when an event includes a participant.\n* Use **\"Create Event\"** for solo events.\n* Use **\"Get Events\"** to fetch calendar schedules when requested.\n* Use **\"Delete Event\"** to delete an event. You must use **\"Get Events\"** first to get the ID of the event to delete.\n* Use **\"Update Event\"** to update an event. You must use **\"Get Events\"** first to get the ID of the event to update.\n\n## Final Notes\n\nHere is the current date/time: {{ $now }}\nAll time calculations, comparisons, and stored values must be in **IST (Indian Standard Time)**.\nIf a duration for an event isn’t specified, assume it will be **one hour** in IST.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -144,
+        -64
+      ],
+      "id": "f084b273-ce95-480a-97cf-d5a58037df68",
+      "name": "Calendar Agent",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -368,
+        112
+      ],
+      "id": "7502c019-1117-4f1e-acd6-6163d7a5c907",
+      "name": "gpt-4.1-mini",
+      "credentials": {
+        "openAiApi": {
+          "id": "2ll7nWhcZokpqeYF",
+          "name": "OpenAi account AIS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "calendar": {
+          "__rl": true,
+          "value": "sachinsavkare08@gmail.com",
+          "mode": "list",
+          "cachedResultName": "sachinsavkare08@gmail.com"
+        },
+        "eventId": "={{ $fromAI(\"eventID\") }}",
+        "updateFields": {
+          "end": "={{ $fromAI(\"endTime\") }}",
+          "start": "={{ $fromAI(\"startTime\") }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        -256,
+        176
+      ],
+      "id": "8a51fcf4-9d76-49e5-b223-6d440b73c4f1",
+      "name": "Update Event",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "6ppAccMnijHjiaLv",
+          "name": "Google Calendar account AIS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "calendar": {
+          "__rl": true,
+          "value": "sachinsavkare08@gmail.com",
+          "mode": "list",
+          "cachedResultName": "sachinsavkare08@gmail.com"
+        },
+        "eventId": "={{ $fromAI(\"eventID\") }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        -128,
+        224
+      ],
+      "id": "2edb0ba1-a3a9-4e05-8188-997a5e30dc5e",
+      "name": "Delete Event",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "6ppAccMnijHjiaLv",
+          "name": "Google Calendar account AIS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "sachinsavkare08@gmail.com",
+          "mode": "list",
+          "cachedResultName": "sachinsavkare08@gmail.com"
+        },
+        "timeMin": "={{ $fromAI(\"dayBefore\",\"the day before the date the user requested\") }}",
+        "timeMax": "={{ $fromAI(\"dayAfter\",\"the day after the date the user requested\") }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        256
+      ],
+      "id": "02f17fb2-0400-49f6-996c-64c1daae3435",
+      "name": "Get Events",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "6ppAccMnijHjiaLv",
+          "name": "Google Calendar account AIS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "sachinsavkare08@gmail.com",
+          "mode": "list",
+          "cachedResultName": "sachinsavkare08@gmail.com"
+        },
+        "start": "={{ $fromAI(\"eventStart\") }}",
+        "end": "={{ $fromAI(\"eventEnd\") }}",
+        "additionalFields": {
+          "summary": "={{ $fromAI(\"eventTitle\") }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        128,
+        224
+      ],
+      "id": "69098258-3899-4e01-9406-32739dfb5788",
+      "name": "Create Events",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "6ppAccMnijHjiaLv",
+          "name": "Google Calendar account AIS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "82b31edb-fa25-42ea-948f-e2997ea8c782",
+              "name": "response",
+              "value": "={{$json.output}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        416,
+        -208
+      ],
+      "id": "e6e868bb-2c90-408c-a288-76433ce73a1a",
+      "name": "Respond to Jarvis (Success)"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e9ab2224-e808-4d53-a640-0fec2927d092",
+              "name": "response",
+              "value": "Unable to perform task. Please try again.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        416,
+        0
+      ],
+      "id": "3a433ed3-2656-4812-b3ee-0a2f5eb40b2c",
+      "name": "Respond to Jarvis (Tey Again)"
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "sachinsavkare08@gmail.com",
+          "mode": "list",
+          "cachedResultName": "sachinsavkare08@gmail.com"
+        },
+        "start": "={{ $fromAI(\"eventStart\") }}",
+        "end": "={{ $fromAI(\"eventEnd\") }}",
+        "additionalFields": {
+          "attendees": [
+            "={{ $fromAI(\"eventAttendeeEmail\") }}"
+          ],
+          "summary": "={{ $fromAI(\"eventTitle\") }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        272,
+        160
+      ],
+      "id": "b47d9589-ba3e-4da0-bc1e-7133f2858282",
+      "name": "Create Events with Attendee",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "6ppAccMnijHjiaLv",
+          "name": "Google Calendar account AIS"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Calendar Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "gpt-4.1-mini": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Calendar Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Event": {
+      "ai_tool": [
+        [
+          {
+            "node": "Calendar Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Event": {
+      "ai_tool": [
+        [
+          {
+            "node": "Calendar Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Events": {
+      "ai_tool": [
+        [
+          {
+            "node": "Calendar Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Events": {
+      "ai_tool": [
+        [
+          {
+            "node": "Calendar Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to Jarvis (Success)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Jarvis (Tey Again)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Events with Attendee": {
+      "ai_tool": [
+        [
+          {
+            "node": "Calendar Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "eeacd187-2e8a-4391-be58-dd84b60b290b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "91f42292365f2736b62ea45ddfd531a5d9a185f2bc4a363bfb1ae1188ac76851"
+  },
+  "id": "qf4sNvUY4tlMYVfs",
+  "tags": []
+}

@@ -1,0 +1,292 @@
+{
+  "name": "28.4 Contact Agent Subworkflow",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -432,
+        -32
+      ],
+      "id": "8f6b3388-38c5-45a5-8652-64d3f7e35aea",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.query }}",
+        "options": {
+          "systemMessage": "=# Overview\n\nYou are a contact management assistant. Your responsibilities include looking up contacts, adding new contacts, or updating a contact’s information using Google Sheets.\n\n**Contact Management**\n\n* Use **\"Get Contacts\"** to retrieve contact information from the Google Sheet.\n* Use **\"Add or Update Contact\"** to store new contact details or modify existing entries within the Google Sheet."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -176,
+        -32
+      ],
+      "id": "53171295-a7ca-404e-80e6-7b2e287829fe",
+      "name": "Contact Agent",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -256,
+        160
+      ],
+      "id": "da974781-f20f-46a3-8a15-cc871e1aee36",
+      "name": "gpt-4.1-mini",
+      "credentials": {
+        "openAiApi": {
+          "id": "2ll7nWhcZokpqeYF",
+          "name": "OpenAi account AIS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1O0AlvWQsTusdhR4Xm0mK3prevo1Xkz7Z48GLW2u7VBc",
+          "mode": "list",
+          "cachedResultName": "Contacts",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1O0AlvWQsTusdhR4Xm0mK3prevo1Xkz7Z48GLW2u7VBc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 10347442,
+          "mode": "list",
+          "cachedResultName": "Sheet3",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1O0AlvWQsTusdhR4Xm0mK3prevo1Xkz7Z48GLW2u7VBc/edit#gid=10347442"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        -112,
+        224
+      ],
+      "id": "c18bab7b-cbe4-4652-a538-55940373bd44",
+      "name": "Get Contacts",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "r5dJyl6N7Nvh7Os3",
+          "name": "Google Sheets AIS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1O0AlvWQsTusdhR4Xm0mK3prevo1Xkz7Z48GLW2u7VBc",
+          "mode": "list",
+          "cachedResultName": "Contacts",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1O0AlvWQsTusdhR4Xm0mK3prevo1Xkz7Z48GLW2u7VBc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 10347442,
+          "mode": "list",
+          "cachedResultName": "Sheet3",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1O0AlvWQsTusdhR4Xm0mK3prevo1Xkz7Z48GLW2u7VBc/edit#gid=10347442"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Name": "{{ $fromAI(\"name\") }}",
+            "Email": "{{ $fromAI(\"emailAddress\") }}",
+            "Phone Number": "{{ $fromAI(\"phoneNumber\") }}"
+          },
+          "matchingColumns": [
+            "Name"
+          ],
+          "schema": [
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Phone Number",
+              "displayName": "Phone Number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        32,
+        224
+      ],
+      "id": "2575efac-c0e4-4613-83ab-3d3da3f81b26",
+      "name": "Add or Update Contact",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "r5dJyl6N7Nvh7Os3",
+          "name": "Google Sheets AIS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ee893a0a-36db-4dcb-b3d7-b82c7cb06034",
+              "name": "response",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        288,
+        -112
+      ],
+      "id": "576ce46b-bb57-4132-8999-73f99f0c527c",
+      "name": "Responsd to Jarvis (Success)"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "01d2b321-256d-41ed-afe1-4ce00b1323b4",
+              "name": "response",
+              "value": "An error occurred. Please try again.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        192,
+        80
+      ],
+      "id": "0ff92159-1b03-42f0-a947-e79fc98d524b",
+      "name": "Respond to Jarvis (Try Again)"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Contact Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "gpt-4.1-mini": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Contact Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Contacts": {
+      "ai_tool": [
+        [
+          {
+            "node": "Contact Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add or Update Contact": {
+      "ai_tool": [
+        [
+          {
+            "node": "Contact Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Contact Agent": {
+      "main": [
+        [
+          {
+            "node": "Responsd to Jarvis (Success)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Jarvis (Try Again)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "54c05b6d-2cf0-40bd-b66a-2aa66c79e605",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "91f42292365f2736b62ea45ddfd531a5d9a185f2bc4a363bfb1ae1188ac76851"
+  },
+  "id": "kRodaSYykGHM4w1Y",
+  "tags": []
+}

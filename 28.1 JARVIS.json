@@ -1,0 +1,401 @@
+{
+  "name": "28.1 JARVIS",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "n8n_Jarvis",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -336,
+        -32
+      ],
+      "id": "7e83fd8e-236e-423d-aa2c-d7b71e3ff28b",
+      "name": "Webhook",
+      "webhookId": "b7193ada-5cfe-4de1-991a-1eceb17d646a"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.query }}",
+        "options": {
+          "systemMessage": "=# Overview\nYou are the ultimate personal assistant. Your job is to send the user's query to the correct tool. You should never be writing emails, or creating even summaries, you just need to call the correct tool.\n\n## Tools\n- emailAgent: Use this tool to take action in email\n- calendarAgent: Use this tool to take action in calendar\n- contactAgent: Use this tool to get, update, or add contacts\n- contentCreator: Use this tool to create blog posts\n- Tavily: Use this tool to search the web\n\n## Rules\n- Some actions require you to look up contact information first. For the following actions, you must get contact information and send that to the agent who needs it:\n  - sending emails\n  - drafting emails\n  - creating calendar event with attendee\n\n## Examples\n1) \n- Input: send an email to nate herkelman asking him what time he wants to leave\n  - Action: Use contactAgent to get nate herkelman's email\n  - Action: Use emailAgent to send the email. You will pass the tool a query like \"send nate herkelman an email to ask what time he wants to leave. here is his email: [email address]\n- Output: The email has been sent to Nate Herkelman. Anything else I can help you with?\n\n\n## Final Reminders\nHere is the current date/time: {{ $now }}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -64,
+        -32
+      ],
+      "id": "bef64f13-b74a-4d1a-a1ee-d55306880745",
+      "name": "JARVIS"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        320,
+        -32
+      ],
+      "id": "f260d01f-5ed0-4074-a553-f3a27d9d4170",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -336,
+        160
+      ],
+      "id": "8431bc47-3b23-4915-b2e1-f6fdc2c87353",
+      "name": "gpt-4o",
+      "credentials": {
+        "openAiApi": {
+          "id": "2ll7nWhcZokpqeYF",
+          "name": "OpenAi account AIS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Webhook').item.json.headers.host }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -208,
+        160
+      ],
+      "id": "164a4ca9-0812-42cb-bf44-49c4527075e6",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolCalculator",
+      "typeVersion": 1,
+      "position": [
+        496,
+        176
+      ],
+      "id": "6a89a49e-233d-4729-87e6-ba1658c16358",
+      "name": "Calculator"
+    },
+    {
+      "parameters": {
+        "content": "### LOVABLE PROMPT START \n\n#### Project: Jarvis — Personal Voice AI Assistant (Web)\n\n##### One-line summary\n\n###### Build a sleek, minimal, futuristic web app named **Jarvis** that lets users talk to a personal voice assistant: record voice → transcribe → send to webhook → display webhook reply (and optionally play Jarvis TTS). Built with **React + Tailwind**, dark mode first, highly responsive and accessible.\n\n---\n\nGoals\n\n1. Provide an intuitive voice-first chat interface to interact with Jarvis.\n2. Convert spoken user input into text (client or server ASR), POST the transcription to a configurable webhook, and display the webhook response as Jarvis's reply.\n3. Use **ElevenLabs** for **text-to-speech (TTS)** playback of Jarvis replies. (For STT, prefer the browser Web Speech API client-side; optionally support server-side ASR like Whisper/Google STT if provided.)\n4. Keep the UI minimal, futuristic, and performant—no unnecessary clutter.\n\n---\n\nTarget users & persona\n\n* Power users who want a fast personal assistant UI (desktop + mobile browsers).\n* Non-technical users who want voice interactions.\n* Expectation: short direct queries, occasional longer dictations, and quick replies.\n\n---\n\nNon-functional requirements\n\n* **Dark mode default.** Responsive for mobile + desktop.\n* **Accessibility:** keyboard control, ARIA labels, high contrast text, focus visible.\n* **Privacy/security:** do not store API keys client-side; webhook requests signed/authorized; minimal telemetry.\n* **Performance:** small bundle, lazy-load TTS assets, resumable audio playback.\n* **Resilience:** offline fallback to manual text input, clear error states & retries.\n\n---\n\nCore features & UX flow (detailed)\n\n1. **Main screen**\n\n   * App shell with header (App title “Jarvis”, optional status icon), main chat area, input area / mic control.\n2. **Start Recording**\n\n   * User clicks mic button (floating center bottom or bottom-right).\n   * Show recording animation: pulsing ring and waveform.\n   * While recording: show live transcribed text (if using Web Speech API).\n   * Click again to stop; automatically stop after a configurable timeout (e.g., 30s).\n3. **Transcription & Send**\n\n   * On stop: create a message object with `status: sending`.\n   * If client STT available (Web Speech API), use it immediately. Else: upload audio blob to backend ASR endpoint (if configured) or send raw audio or base64 to webhook for server transcription.\n   * POST to configured webhook with standardized payload (see API contract below).\n4. **Webhook Response**\n\n   * When webhook responds, display reply as Jarvis message bubble (left side) with subtle glowing avatar.\n   * If webhook includes TTS info (audio URL or base64), fetch and play via ElevenLabs or provided audio.\n   * If no TTS present, optionally call ElevenLabs TTS with reply text (if allowed) and play audio.\n5. **Conversation**\n\n   * Scroll to bottom on new messages.\n   * Persist to localStorage (session-level) to retain short conversation history.\n   * Provide a “clear conversation” action.\n6. **Fallbacks**\n\n   * If microphone access denied: show a manual text input fallback.\n   * If transcription fails: show error inline with retry button.\n   * If webhook times out (e.g., >15s): show a “processing” state and optionally poll or allow user to cancel.\n\n---\n\nComponent map (deliverable components)\n\nCreate modular, re-usable React components (prefer TypeScript; JS acceptable if requested):\n\n* `AppShell` — top-level layout (header, main content, footer controls).\n* `ChatContainer` — message list, scroll handling, empty state.\n* `MessageBubble` — props: `{ id, sender, text, timestamp, audioUrl?, status }`. Styles for user vs Jarvis.\n* `VoiceRecorder` — mic button, recording state, waveform, permission handling, exposes `onRecordingComplete(blob, transcript?)`.\n* `WaveformVisualizer` — visual feedback while recording.\n* `AudioPlayer` — handles playing TTS audio, queueing, stop on new audio.\n* `SettingsModal` — webhook URL, voice selection, STT source selection, advanced toggles.\n* `Toast` / `ErrorBanner` — for short errors & confirmations.\n* `LocalStore` (hook) — abstraction for localStorage conversation management.\n* `Api` (service module) — fetch wrappers, signature headers, retries, exponential backoff.\n\n---\n\nData model (message)\n\n```json\n{\n  \"id\": \"string\",                 // unique (e.g., msg_YYYYMMDD_HHMMSS_rand)\n  \"sender\": \"user\" | \"jarvis\",\n  \"text\": \"string\",               // transcription or reply text\n  \"audioUrl\": \"string|null\",      // optional (TTS URL)\n  \"audioBase64\": \"string|null\",   // optional alternative\n  \"status\": \"sending\"|\"sent\"|\"failed\",\n  \"timestamp\": 169--,\n  \"meta\": { \"sttProvider\": \"webspeech|server|none\", \"lang\": \"en-US\" }\n}\n```\n\n---\n\n## Webhook API contract (recommended)\n\n**POST** `${WEBHOOK_URL}`\nHeaders:\n\n* `Content-Type: application/json`\n* `X-Client-Id: <app client id>` (optional)\n* `X-Signature: <HMAC-SHA256 signature>` (optional but recommended)\n\nRequest body:\n\n```json\n{\n  \"id\": \"msg_20251007_1234\",\n  \"userId\": \"anonymous_123\",\n  \"text\": \"What’s my schedule today?\",\n  \"audio\": null,                 // optional: URL if uploaded to server or base64 if needed\n  \"meta\": { \"lang\":\"en-US\", \"sttSource\":\"webspeech\" }\n}\n```\n\nExpected success response:\n\n```json\n{\n  \"replyText\": \"You have 3 meetings today. First at 10:00 AM...\",\n  \"replyTTS\": {                             // optional\n    \"provider\": \"elevenlabs\",\n    \"voice\": \"alloy\",\n    \"audioUrl\": \"https://cdn.example.com/replies/msg_1234.mp3\"\n  },\n  \"actions\": [ /* optional structured actions (open_url, set_reminder) */ ],\n  \"conversationState\": { \"save\": true }\n}\n```\n\nError responses:\n\n* `400` — invalid payload (return `{ error: \"...\" }`)\n* `401/403` — auth failure\n* `500` — server error with `retryAfter` recommended\n\nClient behavior on responses:\n\n* If `replyTTS.audioUrl` present -> fetch + play using Audio Player.\n* If `replyTTS` absent but `replyText` present -> optionally call ElevenLabs TTS on client (only if allowed and API key server-proxied).\n\n---\n\nSTT / TTS integration guidance\n\n* **TTS (ElevenLabs):** Use ElevenLabs for generating Jarvis voice. **Never embed API keys client-side.** Use a server proxy or signed short-lived URL to generate/serve audio. If the webhook returns `replyTTS.audioUrl`, play it directly.\n* **Client-side STT:** Use the **Web Speech API** for instant transcription (best UX, no server upload). Show live transcript while recording. Limitations: browser compatibility (Chrome, Edge best; Safari support improving).\n* **Server-side STT (optional):** If you prefer server-side transcription (Whisper, Google Cloud Speech), upload audio blob to backend endpoint and perform ASR there. Provide configuration toggle in settings.\n* **Fallback:** If no STT available, capture audio blob and send it to webhook; allow webhook to handle transcription.\n\n---\n\nSecurity & privacy\n\n* **Never** store API keys in frontend source. Use server endpoints that sign or proxy requests to ElevenLabs.\n* Use HTTPS for all endpoints.\n* Sign webhook calls using HMAC (`X-Signature`) so server can verify authenticity.\n* Default to not logging audio by default; if logging needed, provide consent checkbox in settings.\n\n---\n\nUI design tokens (suggested)\n\n* Background: `#070812` or `#0B1020`\n* Card: `#0F1724`\n* Primary Accent: `#49D6FF` (electric blue)\n* Secondary Accent: `#7C5CFF`\n* Text: `#E6EEF8` (primary), muted `#9AA6B2`\n* Font: Inter or system-ui (fallback)\n\nMicrointeractions:\n\n* Mic press: quick scale + glow; recording pulse ring.\n* Messages: subtle slide/fade in with 150–250ms ease (Framer Motion recommended).\n\n---\n\nAccessibility (required)\n\n* Mic button keyboard focusable and toggleable via Space/Enter.\n* Provide visible focus states, aria-labels (`aria-label=\"Start recording\"`).\n* All interactive elements with accessible names.\n* Ensure color contrast ratio >= 4.5:1 for body text.\n\n---\n\nPersistence & session\n\n* Keep last N messages in `localStorage` (configurable, default 30 messages).\n* Option to export conversation as JSON.\n* Settings persisted locally (selected voice, webhook URL, STT method).\n\n---\n\nError handling & retries\n\n* Show inline status bubble for user message: `sending`, `failed` with retry button.\n* Use exponential backoff for transient webhook failures (3 attempts).\n* If TTS fetch fails, fallback to text-only display and show retry.\n\n---\n\nEnv variables & config (example)\n\n* `VITE_APP_WEBHOOK_URL` (default webhook endpoint)\n* `VITE_APP_CLIENT_ID` (optional)\n* `VITE_APP_ELEVENLABS_PROXY` (server endpoint to request ElevenLabs TTS)\n* `RECORDING_MAX_MS=30000` (30s default)\n\n> Note: Prefix env keys per chosen toolchain (Vite uses `VITE_`).\n\n---\n\nFile structure (suggested)\n\n```\n/src\n  /components\n    AppShell.tsx\n    ChatContainer.tsx\n    MessageBubble.tsx\n    VoiceRecorder.tsx\n    WaveformVisualizer.tsx\n    AudioPlayer.tsx\n    SettingsModal.tsx\n    Toast.tsx\n  /hooks\n    useRecorder.ts\n    useLocalStore.ts\n    useAudioPlayer.ts\n  /services\n    api.ts\n    elevenlabs.ts    // optional client proxy wrappers\n  /styles\n    tailwind.css\n  main.tsx\n  App.tsx\nREADME.md\n```\n\n---\n\nAcceptance criteria / QA checklist\n\n* [ ] Mic can request permission and record audio; visual feedback appears.\n* [ ] Transcription is displayed after recording (via Web Speech API or server).\n* [ ] Transcribed text is POSTed to configured webhook and response is rendered as Jarvis message.\n* [ ] If webhook returns TTS audio URL, it is played without errors.\n* [ ] UI responsive on mobile and desktop; dark mode polished.\n* [ ] Keyboard accessible and ARIA-compliant controls.\n* [ ] Error and retry flows work for no-mic, STT fail, webhook fail.\n* [ ] Local conversation persists and can be exported/cleared.\n* [ ] No secrets in the client; server proxy required for ElevenLabs calls.\n\n---\n\nTests / sample flows to validate\n\n1. Normal flow: Record → WebSpeech transcription → webhook reply text + tts URL → audio plays.\n2. No mic permission: manual text fallback — send to webhook and get reply.\n3. Slow webhook: show spinner + timeout after 15s with cancel option.\n4. TTS fail: show text and allow manual retry of TTS generation via server proxy.\n5. Offline: attempt recording then show “offline — saved draft” notification.\n\n---\n\nDeliverables for Lovable to generate\n\n* Fully functional React (TypeScript preferred) app scaffold using Vite.\n* Tailwind CSS configured with suggested theme tokens.\n* Components listed in Component Map implemented and styled.\n* `Api` service with configurable webhook URL and secure proxy integration notes for ElevenLabs calls.\n* README with setup, env variables, and how to wire a server proxy for ElevenLabs and server-side STT (if needed).\n* Minimal automated tests (unit tests for core hooks/components) — optional but recommended.\n\n---\n\nAdditional constraints & behavior\n\n* UI must display Jarvis as a single voice persona (name “Jarvis”), with ability to choose alternate ElevenLabs voices via settings.\n* Keep message UX terse and scannable; Jarvis replies should prefer short paragraphs and optional action buttons.\n* Provide developer toggle for `sttMode: webspeech | server` in settings for testing.\n\n---\n\nOptional / future enhancements (mention for roadmap)\n\n* User authentication & cloud conversation storage.\n* Integrations: calendar, tasks, email (via webhook actions).\n* Rich attachments & cards (e.g., quick action buttons returned by webhook).\n* Cross-device session sync.\n\n---\n\nFinal instruction for Lovable (Use this exact phrasing)\n\n**Task:** Generate a production-like single-page React application scaffold (TypeScript + Vite preferred) that implements the “Jarvis” voice assistant UI described above using Tailwind CSS. Output should include all components, hooks, services, sample `.env` template, and a README describing server proxy requirements for ElevenLabs TTS and optional server-side STT. Ensure accessibility, responsive design, and clear error handling. Do not include actual API keys — instead include safe placeholders and server-proxy guidance.\n\n---\n\n--- LOVABLE PROMPT END ---\n\n---\n\nIf you want, I can now:\n\n* 1. Turn this into a **shorter** Lovable prompt (1–2 paragraphs) if Lovable has a character limit, **or**\n* 2. Generate the initial project scaffold (Vite + React + Tailwind) here for you (file tree + key files) so you can copy/paste into your code editor.\n\nWhich of those would be most useful next?\n\n",
+        "height": 864,
+        "width": 624,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1760,
+        -96
+      ],
+      "id": "2c5e6f54-b659-4293-b622-198b435758a2",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "description": "Call this tool for any email actions",
+        "workflowId": {
+          "__rl": true,
+          "value": "XdHCrWoh6PuIutnJ",
+          "mode": "list",
+          "cachedResultName": "28.2 Email Agent Subworkflow"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        -144,
+        304
+      ],
+      "id": "88c0dbcd-ea1f-4823-95f3-a41b14b3814e",
+      "name": "Email Agent"
+    },
+    {
+      "parameters": {
+        "description": "Call this tool to p0erform calendar operations",
+        "workflowId": {
+          "__rl": true,
+          "value": "qf4sNvUY4tlMYVfs",
+          "mode": "list",
+          "cachedResultName": "28.3 Calendar Agent Subworkflow"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        -16,
+        384
+      ],
+      "id": "3f3b66b8-f0ad-4d34-81b6-b6f963f499c4",
+      "name": "Calendar Agent"
+    },
+    {
+      "parameters": {
+        "description": "Call this tool acces the contact database and add or update contact database",
+        "workflowId": {
+          "__rl": true,
+          "value": "kRodaSYykGHM4w1Y",
+          "mode": "list",
+          "cachedResultName": "28.4 Contact Agent Subworkflow"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        144,
+        384
+      ],
+      "id": "86a7de9b-48bf-4464-9afb-f9cf7f678f1b",
+      "name": "Contact Agent"
+    },
+    {
+      "parameters": {
+        "description": "Call this tool to perform operation like to create content on given topic ",
+        "workflowId": {
+          "__rl": true,
+          "value": "Bk7MFiLXg3gXiMQP",
+          "mode": "list",
+          "cachedResultName": "28.5 Content Creator Agent Subworkflow"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        288,
+        352
+      ],
+      "id": "db5bfd79-f905-4a5d-9cdf-272f46ede688",
+      "name": "Content Creator Agent"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Use this tool to search the internet",
+        "method": "POST",
+        "url": "https://api.tavily.com/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n    \"query\": \"{searchTerm}\",\n    \"search_depth\": \"basic\",\n    \"include_answer\": true,\n    \"topic\": \"news\",\n    \"include_raw_content\": true,\n    \"max_results\": 3\n} ",
+        "placeholderDefinitions": {
+          "values": [
+            {
+              "name": "searchTerm",
+              "description": "What the user has requested to search the internet for",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        416,
+        288
+      ],
+      "id": "3966b5ef-c010-4cf6-9438-2ffe1224b2e6",
+      "name": "TAVILY",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "GDg1hzKpkf1SuQ5d",
+          "name": "Tavily Credentials AIS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "# https://vocal-stream-ai.lovable.app/",
+        "height": 80,
+        "width": 624,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -288,
+        -176
+      ],
+      "id": "797ad200-c79f-4833-9d48-fcf4759a2885",
+      "name": "Sticky Note1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "JARVIS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JARVIS": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "gpt-4o": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "JARVIS",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "JARVIS",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculator": {
+      "ai_tool": [
+        [
+          {
+            "node": "JARVIS",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Agent": {
+      "ai_tool": [
+        [
+          {
+            "node": "JARVIS",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar Agent": {
+      "ai_tool": [
+        [
+          {
+            "node": "JARVIS",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Contact Agent": {
+      "ai_tool": [
+        [
+          {
+            "node": "JARVIS",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Content Creator Agent": {
+      "ai_tool": [
+        [
+          {
+            "node": "JARVIS",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TAVILY": {
+      "ai_tool": [
+        [
+          {
+            "node": "JARVIS",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "6176005e-75fd-48f5-9602-116ccf4c6035",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "91f42292365f2736b62ea45ddfd531a5d9a185f2bc4a363bfb1ae1188ac76851"
+  },
+  "id": "7cjdOIvykEfIIseH",
+  "tags": []
+}
