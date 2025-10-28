@@ -339,11 +339,6 @@
 
 ---
 
-## ✅ Final Notes & Next Steps
-
-* The README above is outcome-focused for clients and keeps technical details available for implementers.
-* If you want, I can:
-
   * 1. Convert this into a single markdown file ready to paste into GitHub (`README.md`).
   * 2. Insert actual shields.io badge images and example badge links.
   * 3. Add a short “Quick Start” with exact steps for importing the JSON and wiring credentials.
